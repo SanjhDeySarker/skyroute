@@ -1,97 +1,64 @@
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Flight = require("../models/Flight");
 
-// Create Booking
-exports.createBooking = async (req, res) => {
+exports.createMultiCityBooking = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const { flightId, passengers, seats, amountPaid } = req.body;
+    const { legs, amountPaid } = req.body;
+    const userId = req.user._id;
 
-    const flight = await Flight.findById(flightId);
-    if (!flight) return res.status(404).json({ message: "Flight not found" });
-
-    // Check seat availability
-    const bookedSeats = flight.seats
-      .filter(s => s.isBooked)
-      .map(s => s.seatNumber);
-
-    const conflict = seats.some(seat => bookedSeats.includes(seat));
-
-    if (conflict) {
-      return res.status(400).json({ message: "Some seats are already booked" });
+    if (!legs || legs.length < 2) {
+      throw new Error("Multi-city booking requires at least 2 flights");
     }
 
-    // Mark seats as booked
-    flight.seats = flight.seats.map(seat => {
-      if (seats.includes(seat.seatNumber)) {
-        return { ...seat._doc, isBooked: true };
-      }
-      return seat;
-    });
+    // Validate & book seats for each leg
+    for (const leg of legs) {
+      const flight = await Flight.findById(leg.flight).session(session);
+      if (!flight) throw new Error("Flight not found");
 
-    await flight.save();
+      // check seat availability
+      const bookedSeats = flight.seats
+        .filter(s => s.isBooked)
+        .map(s => s.seatNumber);
+
+      if (leg.seats.some(s => bookedSeats.includes(s))) {
+        throw new Error("One or more seats already booked");
+      }
+
+      // mark seats booked
+      flight.seats = flight.seats.map(s =>
+        leg.seats.includes(s.seatNumber)
+          ? { ...s._doc, isBooked: true }
+          : s
+      );
+
+      flight.availableSeats -= leg.seats.length;
+      await flight.save({ session });
+    }
 
     // Create booking
-    const booking = await Booking.create({
-      user: req.user._id,
-      flight: flightId,
-      passengers,
-      seats,
-      amountPaid
-    });
+    const booking = await Booking.create(
+      [{
+        user: userId,
+        legs,
+        amountPaid,
+        status: "confirmed",
+        paymentStatus: "paid"
+      }],
+      { session }
+    );
 
-    res.json({
-      message: "Booking successful",
-      booking
-    });
+    await session.commitTransaction();
+    session.endSession();
 
-  } catch (error) {
-    res.status(500).json({
-      message: "Error creating booking",
-      error: error.message
-    });
-  }
-};
+    res.status(201).json({ booking: booking[0] });
 
-// Get all bookings of a user
-exports.getUserBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find({ user: req.user._id })
-      .populate("flight")
-      .sort({ createdAt: -1 });
-
-    res.json(bookings);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching bookings", error });
-  }
-};
-
-// Get booking by ID
-exports.getBookingById = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate("flight")
-      .populate("user");
-
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-
-    res.json(booking);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching booking", error });
-  }
-};
-
-// Cancel booking
-exports.cancelBooking = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id);
-
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-
-    booking.status = "cancelled";
-    await booking.save();
-
-    res.json({ message: "Booking cancelled", booking });
-  } catch (error) {
-    res.status(500).json({ message: "Error cancelling booking", error });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(400).json({ message: err.message });
   }
 };

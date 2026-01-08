@@ -1,25 +1,30 @@
 const express = require("express");
 const router = express.Router();
 
-const {
-  createBooking,
-  getUserBookings,
-  getBookingById,
-  cancelBooking
-} = require("../controllers/bookingController");
-
 const protect = require("../middleware/authMiddleware");
 
-// User Books a Flight
+// ✅ IMPORT CONTROLLERS CORRECTLY
+const {
+  createBooking,
+  createMultiCityBooking,
+  getMyBookings,
+  getBoardingPass
+} = require("../controllers/bookingController");
+
+// ==========================
+// ROUTES
+// ==========================
+
+// Create single-flight booking
 router.post("/", protect, createBooking);
 
-// Get logged in user's bookings
-router.get("/my", protect, getUserBookings);
+// Create multi-city booking
+router.post("/multicity", protect, createMultiCityBooking);
 
-// Get single booking
-router.get("/:id", protect, getBookingById);
+// Get logged-in user's bookings
+router.get("/my", protect, getMyBookings);
 
-// Cancel booking
-router.put("/:id/cancel", protect, cancelBooking);
+// Download boarding pass PDF
+router.get("/:id/boarding-pass", protect, getBoardingPass);
 
 module.exports = router;

@@ -1,54 +1,57 @@
-import { Link } from "react-router-dom";
+import { useCompare } from "../context/CompareContext";
+import Card from "./ui/Card";
+import Button from "./ui/Button";
 
-export default function FlightCard({ flight }) {
+export default function FlightCard({ flight, onSelect }) {
+  const { addToCompare } = useCompare();
+
+  const price = flight.dynamicPrice || flight.basePrice;
+
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200 hover:shadow-xl transition duration-200">
+    <Card className="p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
 
-      {/* Airline + Flight Number */}
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-bold text-blue-700">{flight.airline}</h2>
-        <p className="text-gray-600 text-sm">#{flight.flightNumber}</p>
-      </div>
-
-      {/* Route */}
-      <div className="flex justify-between items-center">
+      {/* HEADER */}
+      <div className="flex justify-between items-start">
         <div>
-          <p className="text-2xl font-semibold">{flight.source}</p>
-          <p className="text-gray-500 text-sm">Departure</p>
+          <h2 className="text-lg font-bold">
+            {flight.airline}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {flight.flightNumber}
+          </p>
         </div>
 
-        <div className="text-center">
-          <p className="text-gray-400">✈️</p>
-          <p className="text-gray-600 text-xs">{flight.duration}</p>
-        </div>
-
-        <div>
-          <p className="text-2xl font-semibold">{flight.destination}</p>
-          <p className="text-gray-500 text-sm">Arrival</p>
-        </div>
-      </div>
-
-      {/* Prices & availability */}
-      <div className="flex justify-between items-center mt-4">
-        <p className="text-xl font-bold text-green-600">
-          ₹ {flight.dynamicPrice || flight.basePrice}
-        </p>
-
-        <p className="text-sm text-gray-500">
-          Seats left: <span className="font-semibold">{flight.availableSeats}</span>
-        </p>
-      </div>
-
-      {/* View Details Button */}
-      <div className="text-right mt-4">
-        <Link
-          to={`/flight/${flight._id}`}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        <button
+          onClick={() => addToCompare(flight)}
+          className="text-sm text-blue-600 dark:text-blue-400 underline hover:opacity-80"
         >
-          View Details
-        </Link>
+          Compare
+        </button>
       </div>
 
-    </div>
+      {/* ROUTE */}
+      <div className="mt-3 text-sm">
+        <p className="font-semibold">
+          {flight.source} → {flight.destination}
+        </p>
+        <p className="text-gray-600 dark:text-gray-400">
+          ⏱ {flight.duration}
+        </p>
+      </div>
+
+      {/* PRICE */}
+      <p className="mt-4 text-2xl font-extrabold text-green-600 dark:text-green-400">
+        ₹ {price}
+      </p>
+
+      {/* CTA */}
+      <Button
+        onClick={() => onSelect(flight)}
+        className="w-full mt-4"
+      >
+        Select Flight
+      </Button>
+
+    </Card>
   );
 }

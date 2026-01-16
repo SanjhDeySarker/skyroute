@@ -14,55 +14,28 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-900 text-black dark:text-white shadow-md">
+    <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
-        {/* LEFT: LOGO */}
+        {/* LOGO */}
         <Link
           to="/"
-          className="text-2xl font-bold text-blue-600 dark:text-blue-400"
+          className="text-2xl font-extrabold text-blue-600 dark:text-blue-400"
         >
           SkyRoute ✈️
         </Link>
 
-        {/* RIGHT: NAV LINKS */}
-        <div className="flex items-center gap-4">
+        {/* NAV LINKS */}
+        <div className="flex items-center gap-4 text-sm font-medium">
 
-          <Link
-            to="/"
-            className="hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            Home
-          </Link>
+          <Link to="/">Home</Link>
 
-          <Link
-            to="/flights"
-            className="hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            Flights
-          </Link>
+          <Link to="/flights">Flights</Link>
 
-          {/* MULTI-CITY */}
           {user && (
-            <Link
-              to="/multicity"
-              className="hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Multi-City
-            </Link>
+            <Link to="/dashboard">My Trips</Link>
           )}
 
-          {/* USER DASHBOARD */}
-          {user && (
-            <Link
-              to="/dashboard"
-              className="hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              My Trips
-            </Link>
-          )}
-
-          {/* ADMIN LINKS */}
           {user?.role === "admin" && (
             <Link
               to="/admin"
@@ -72,19 +45,13 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* AUTH BUTTONS */}
+          {/* AUTH */}
           {!user ? (
             <>
-              <Link
-                to="/login"
-                className="hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Login
-              </Link>
-
+              <Link to="/login">Login</Link>
               <Link
                 to="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl"
               >
                 Sign Up
               </Link>
@@ -92,7 +59,7 @@ export default function Navbar() {
           ) : (
             <button
               onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl"
             >
               Logout
             </button>
@@ -101,7 +68,7 @@ export default function Navbar() {
           {/* DARK MODE TOGGLE */}
           <button
             onClick={() => setDark(!dark)}
-            className="ml-2 p-2 rounded-lg bg-gray-200 dark:bg-gray-700"
+            className="ml-2 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center"
             title="Toggle Dark Mode"
           >
             {dark ? "🌙" : "🌞"}

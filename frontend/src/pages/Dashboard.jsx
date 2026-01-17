@@ -1,118 +1,123 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import api from "../api/axios";
-import { useNavigate } from "react-router-dom";
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user's bookings
-  const loadBookings = async () => {
-    try {
-      const res = await api.get("/bookings/my");
-      setBookings(res.data);
-    } catch (err) {
-      console.error("Error loading bookings:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadBookings();
+    const fetchBookings = async () => {
+      try {
+        const res = await api.get("/bookings/my");
+        setBookings(res.data);
+      } catch (err) {
+        console.error("Failed to load bookings", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
-  // Cancel booking handler
-  const cancelBooking = async (id) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-
-    try {
-      await api.put(`/bookings/${id}/cancel`);
-      loadBookings();
-    } catch (error) {
-      alert("Could not cancel booking");
-      console.error(error);
-    }
-  };
-
-  if (loading) return <p className="p-6 text-gray-600">Loading your bookings...</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600 dark:text-gray-400">
+          Loading your trips...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white px-6 py-8">
+      <div className="max-w-6xl mx-auto">
 
-      <h1 className="text-3xl font-bold text-blue-700 mb-6">
-        My Bookings
-      </h1>
+        {/* HEADER */}
+        <h1 className="text-3xl font-bold mb-6">
+          Welcome, {user?.name} 👋
+        </h1>
 
-      {bookings.length === 0 && (
-        <p className="text-gray-500">You have no bookings yet.</p>
-      )}
-
-      <div className="space-y-5">
-        {bookings.map((b) => (
-          <div
-            key={b._id}
-            className="bg-white shadow-md border border-gray-200 p-5 rounded-lg"
-          >
-            {/* Flight Info */}
-            <h2 className="text-xl font-semibold text-blue-700">
-              {b.flight.airline} — {b.flight.flightNumber}
-            </h2>
-
-            <p className="text-gray-700">
-              {b.flight.source} → {b.flight.destination}
+        {bookings.length === 0 ? (
+          <Card className="p-6 text-center">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              You have no bookings yet.
             </p>
+            <Button onClick={() => window.location.href = "/flights"}>
+              Book a Flight
+            </Button>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
 
-            <p className="text-gray-700 mt-1">
-              Seats: <strong>{b.seats.join(", ")}</strong>
-            </p>
-
-            <p className="text-gray-700">
-              Amount Paid:{" "}
-              <strong className="text-green-600">₹ {b.amountPaid}</strong>
-            </p>
-
-            <p className="mt-1">
-              Status:{" "}
-              <span
-                className={
-                  b.status === "confirmed"
-                    ? "text-green-600 font-bold"
-                    : "text-red-600 font-bold"
-                }
+            {bookings.map((booking) => (
+              <Card
+                key={booking._id}
+                className="p-5 transition-all duration-300 hover:shadow-2xl"
               >
-                {b.status.toUpperCase()}
-              </span>
-            </p>
+                {/* FLIGHT INFO */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
 
-            {/* Buttons */}
-            <div className="flex justify-between mt-4">
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      {booking.flight?.airline}
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {booking.flight?.source} → {booking.flight?.destination}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(
+                        booking.flight?.departureTime
+                      ).toLocaleString()}
+                    </p>
+                  </div>
 
-              {/* View booking */}
-              <button
-                onClick={() =>
-                  navigate("/confirmation", { state: { booking: b } })
-                }
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-              >
-                View Ticket
-              </button>
+                  {/* STATUS */}
+                  <span
+                    className={`px-4 py-1 rounded-full text-sm font-semibold
+                      ${
+                        booking.status === "confirmed"
+                          ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200"
+                      }
+                    `}
+                  >
+                    {booking.status}
+                  </span>
+                </div>
 
-              {/* Cancel booking */}
-              {b.status !== "cancelled" && (
-                <button
-                  onClick={() => cancelBooking(b._id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                >
-                  Cancel Booking
-                </button>
-              )}
-            </div>
+                {/* DETAILS */}
+                <div className="mt-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                  <p className="font-semibold">
+                    Amount Paid:{" "}
+                    <span className="text-green-600 dark:text-green-400">
+                      ₹ {booking.amountPaid}
+                    </span>
+                  </p>
+
+                  <div className="flex gap-3">
+                    <a
+                      href={`${import.meta.env.VITE_API_URL}/api/bookings/${booking._id}/boarding-pass`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="secondary">
+                        Download Boarding Pass
+                      </Button>
+                    </a>
+                  </div>
+                </div>
+              </Card>
+            ))}
+
           </div>
-        ))}
+        )}
       </div>
-
     </div>
   );
 }
